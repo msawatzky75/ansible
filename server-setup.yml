@@ -1,0 +1,168 @@
+---
+- hosts: 192.168.1.141
+  remote_user: root
+
+  tasks:
+    - name: Make sure all packages are up to date, just in case.
+      dnf:
+        name: "*"
+        state: latest
+
+    - name: Block for manging users/groups
+      block:
+        - name: Create media group with GID of 118
+          group:
+            state: present
+            name: media
+            gid: 118
+
+        - name: Create service accounts with specific UID/GIDs and set shells to nologin
+          user:
+            state: present
+            uid: "{{ item.uid }}"
+            group: "{{ item.group }}"
+            name: "{{ item.name }}"
+            shell: /sbin/nologin
+          loop:
+            - { uid: "113", name: "sonarr", group: "media" }
+            - { uid: "116", name: "qbittorrent", group: "media" }
+            - { uid: "117", name: "jackett", group: "media" }
+            - { uid: "114", name: "jellyfin", group: "media" }
+            - { uid: "115", name: "radarr", group: "media" }
+            - { uid: "119", name: "ombi", group: "media" }
+
+    # Guide used: https://docs.docker.com/engine/install/rhel/#install-using-the-repository
+
+    - name: Block for Docker installation (and podman removal)
+      block:
+        - name: Make sure we have yum-utils installed so we can add the docker repos.
+          dnf:
+            name: yum-utils
+            state: latest
+
+        - name: Setup Docker repos
+          shell: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+          args:
+            creates: /etc/yum.repos.d/docker-ce.repo
+
+        # https://www.ibm.com/docs/en/eam/4.2?topic=questions-troubleshooting-tips#uninstall_podman
+        # Picked up this tidbit from IBM to resolve dependency issues between containers-common in regrds to runc and containers.io
+        - name: Make sure podman packages are removed
+          dnf:
+            name: buildah,skopeo,podman,containers-common,atomic-registries,container-tools
+            state: absent
+
+        - name: Install Docker CE
+          dnf:
+            name: docker-ce,docker-ce-cli,containerd.io
+            state: present
+
+        - name: Enable and start the Docker daemon
+          systemd:
+            name: docker
+            state: started
+            enabled: yes
+
+    - name: Block for Zabbix setup and configration
+      block:
+        - name: Setup Zabbix repos
+          shell: rpm -Uvh https://repo.zabbix.com/zabbix/5.4/rhel/8/x86_64/zabbix-release-5.4-1.el8.noarch.rpm
+          args:
+            creates: /etc/yum.repos.d/zabbix.repo
+            warn: false # Makes the annoying error goes away.
+
+        - name: Install Zabbix Agent
+          dnf:
+            name: zabbix-agent
+            state: present
+
+        - name: Configure Zabbix Agent
+          lineinfile:
+            path: /etc/zabbix/zabbix_agentd.conf
+            regexp: "{{ item.regex }}"
+            line: "{{ item.line }}"
+          loop:
+            - { regex: "^Server=", line: "Server=pxlnght.com" }
+            - { regex: "^ServerActive=", line: "ServerActive=pxlnght.com" }
+
+        - name: Enable and start the Zabbix Agent
+          systemd:
+            name: zabbix-agent
+            state: started
+            enabled: yes
+
+        - name: Notify to add to Zabbix appliance manually.
+          debug:
+            msg: "You have to manually add the sever to the Zabbix appliance. Its IP is pxlnght.com last I knew. :D"
+
+    - name: Block for qemu-guest-agent setup (req for Proxmox integration)
+      block:
+        - name: Ensure qemu-guest-agent is installed
+          dnf:
+            name: qemu-guest-agent
+            state: present
+
+        - name: Enable and start the qemu-guest-agent (if it hangs here, shut down target and enable the guest agent in proxmox)
+          systemd:
+            name: qemu-guest-agent
+            state: started
+            enabled: yes
+
+    - name: Block for firewalld rules
+      block:
+        - name: Ensure git is installed, can't clone rules repo without it.
+          dnf:
+            name: git
+            state: present
+
+        - name: Clone firewalld-rules repo
+          git:
+            repo: https://github.com/msawatzky75/firewalld-rules.git
+            dest: /etc/firewalld/services
+
+        # This isn't idempotent, sue me :D
+        - name: Reload the firewall so we can see the new rules (not supported by firewalld module afiak)
+          shell: firewall-cmd --reload
+
+        - name: Enable all the custom firewalld rules that were cloned
+          firewalld:
+            service: "{{ item.service }}"
+            state: enabled
+            permanent: yes
+          loop:
+            - { service: jackett }
+            - { service: minecraft }
+            - { service: ombi }
+            - { service: plex }
+            - { service: radarr }
+            - { service: samba }
+            - { service: satisfactory }
+            - { service: sonarr }
+            - { service: zabbix }
+
+        # This isn't idempotent, sue me :D
+        - name: Reload the firewall to enable the rules (not supported by firewalld module afiak)
+          shell: firewall-cmd --reload
+
+    - name: SSHD configuration
+      block:
+        - name: Configure SSHD to reject password root logins (still allows keys)
+          lineinfile:
+            path: /etc/ssh/sshd_config
+            regexp: ^PermitRootLogin
+            line: PermitRootLogin prohibit-password
+
+        - name: Restart SSHD for above change to take effect
+          systemd:
+            name: sshd
+            state: restarted
+
+    - name: Block for misc small configuration
+      block:
+        - name: Create a cron job for patching that runs Mondays at 00:00
+          cron:
+            name: "Updates and reboots at 00:00 on Mondays."
+            minute: "0"
+            hour: "0"
+            weekday: "1"
+            job: "/usr/bin/dnf update -y && /usr/sbin/reboot now"

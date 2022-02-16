@@ -1,5 +1,5 @@
 ---
-- hosts: 192.168.1.141
+- hosts: 192.168.1.13
   remote_user: root
 
   tasks:
@@ -133,12 +133,15 @@
             - { service: jackett }
             - { service: minecraft }
             - { service: ombi }
-            - { service: plex }
+            # - { service: plex }
             - { service: radarr }
             - { service: samba }
-            - { service: satisfactory }
+            # - { service: satisfactory }
             - { service: sonarr }
             - { service: zabbix }
+            - { service: wireguard }
+            - { service: unifi }
+            - { service: jellyfin }
 
         # This isn't idempotent, sue me :D
         - name: Reload the firewall to enable the rules (not supported by firewalld module afiak)

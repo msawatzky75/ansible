@@ -117,7 +117,7 @@
 
         - name: Clone firewalld-rules repo
           git:
-            repo: https://github.com/msawatzky75/firewalld-rules.git
+            repo: git@github.com:msawatzky75/firewalld-rules.git
             dest: /etc/firewalld/services
 
         # This isn't idempotent, sue me :D

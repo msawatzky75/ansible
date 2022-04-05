@@ -31,6 +31,13 @@
             - { uid: "115", name: "radarr", group: "media" }
             - { uid: "119", name: "ombi", group: "media" }
 
+    - name: Install EPEL repo
+      dnf:
+        name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm"
+        state: present
+        disable_gpg_check: yes
+      when: ansible_distribution_major_version == "8"
+
     # Guide used: https://docs.docker.com/engine/install/rhel/#install-using-the-repository
 
     - name: Block for Docker installation (and podman removal)

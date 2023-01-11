@@ -8,6 +8,11 @@
         name: "*"
         state: latest
 
+    - name: Make sure mosh is installed
+      dnf:
+        name: mosh
+        state: latest
+
     - name: Block for manging users/groups
       block:
         - name: Create media group with GID of 118
@@ -137,18 +142,22 @@
             state: enabled
             permanent: yes
           loop:
+            - { service: homeassistant }
+            - { service: jellyfin }
             - { service: jackett }
-            - { service: minecraft }
+            # - { service: minecraft }
             - { service: ombi }
+            - { service: overserr }
+            - { service: pihole }
             # - { service: plex }
             - { service: radarr }
             - { service: samba }
             # - { service: satisfactory }
             - { service: sonarr }
-            - { service: zabbix }
-            - { service: wireguard }
+            - { service: syncthing }
             - { service: unifi }
-            - { service: jellyfin }
+            - { service: wireguard }
+            - { service: zabbix }
 
         # This isn't idempotent, sue me :D
         - name: Reload the firewall to enable the rules (not supported by firewalld module afiak)

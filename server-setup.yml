@@ -147,7 +147,7 @@
             - { service: jackett }
             # - { service: minecraft }
             - { service: ombi }
-            - { service: overserr }
+            - { service: overseerr }
             - { service: pihole }
             # - { service: plex }
             - { service: radarr }

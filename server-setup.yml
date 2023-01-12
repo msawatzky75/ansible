@@ -34,7 +34,12 @@
             - { uid: "115", name: "radarr", group: "media" }
             - { uid: "119", name: "ombi", group: "media" }
 
-    - name: Install EPEL repo
+    # Not idempotent. Don't care. (thanks brian)
+    - name: Enable codeready-builder repo (required for EPEL9)
+      shell: subscription-manager repos --enable codeready-builder-for-rhel-9-$(arch)-rpms
+      when: ansible_distribution_major_version == "9"
+
+    - name: Install EPEL9 repo
       dnf:
         name: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm"
         state: present
@@ -129,6 +134,9 @@
             - { service: unifi }
             - { service: wireguard }
             - { service: zabbix }
+            - { service: http }
+            - { service: https }
+            - { service: http3 }
 
         # This isn't idempotent, sue me :D
         - name: Reload the firewall to enable the rules (not supported by firewalld module afiak)

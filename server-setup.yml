@@ -1,17 +1,14 @@
 ---
 # shuna, korone
-- hosts: 192.168.1.13, 192.168.1.15
+- hosts:
+    - 192.168.1.13
+    - 192.168.1.15
   remote_user: root
 
   tasks:
     - name: Make sure all packages are up to date, just in case.
       dnf:
         name: "*"
-        state: latest
-
-    - name: Make sure mosh is installed
-      dnf:
-        name: mosh
         state: latest
 
     - name: Block for manging users/groups
@@ -43,6 +40,11 @@
         state: present
         disable_gpg_check: yes
       when: ansible_distribution_major_version == "8"
+
+    - name: Make sure mosh is installed
+      dnf:
+        name: mosh
+        state: latest
 
     # Guide used: https://docs.docker.com/engine/install/rhel/#install-using-the-repository
 

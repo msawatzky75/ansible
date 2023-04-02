@@ -19,6 +19,12 @@
             name: media
             gid: 118
 
+        - name: Create postgres group with GID of 119
+          group:
+            state: present
+            name: postgres
+            gid: 119
+
         - name: Create service accounts with specific UID/GIDs and set shells to nologin
           user:
             state: present
@@ -32,7 +38,7 @@
             - { uid: "117", name: "jackett", group: "media" }
             - { uid: "114", name: "jellyfin", group: "media" }
             - { uid: "115", name: "radarr", group: "media" }
-            - { uid: "119", name: "ombi", group: "media" }
+            - { uid: "119", name: "postgres", group: "postgres" }
 
     # Not idempotent. Don't care. (thanks brian)
     - name: Enable codeready-builder repo (required for EPEL9)
@@ -133,10 +139,11 @@
             - { service: syncthing }
             - { service: unifi }
             - { service: wireguard }
-            - { service: zabbix }
+            # - { service: zabbix }
             - { service: http }
             - { service: https }
             - { service: http3 }
+            - { service: mosh }
 
         # This isn't idempotent, sue me :D
         - name: Reload the firewall to enable the rules (not supported by firewalld module afiak)
@@ -157,10 +164,10 @@
 
     - name: Block for misc small configuration
       block:
-        - name: Create a cron job for patching that runs Mondays at 00:00
+        - name: Create a cron job for patching that runs Mondays at 02:00
           cron:
             name: "Updates and reboots at 00:00 on Mondays."
             minute: "0"
-            hour: "0"
+            hour: "2"
             weekday: "1"
             job: "/usr/bin/dnf update -y && /usr/sbin/reboot now"

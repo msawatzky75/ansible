@@ -19,12 +19,6 @@
             name: media
             gid: 118
 
-        - name: Create postgres group with GID of 119
-          group:
-            state: present
-            name: postgres
-            gid: 119
-
         - name: Create service accounts with specific UID/GIDs and set shells to nologin
           user:
             state: present
@@ -38,7 +32,6 @@
             - { uid: "117", name: "jackett", group: "media" }
             - { uid: "114", name: "jellyfin", group: "media" }
             - { uid: "115", name: "radarr", group: "media" }
-            - { uid: "119", name: "postgres", group: "postgres" }
 
     # Not idempotent. Don't care. (thanks brian)
     - name: Enable codeready-builder repo (required for EPEL9)

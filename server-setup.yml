@@ -121,7 +121,7 @@
             - { service: jellyfin }
             - { service: jackett }
             # - { service: minecraft }
-            - { service: ombi }
+            # - { service: ombi }
             - { service: overseerr }
             - { service: pihole }
             # - { service: plex }
@@ -137,6 +137,7 @@
             - { service: https }
             - { service: http3 }
             - { service: mosh }
+            - { service: public-web }
 
         # This isn't idempotent, sue me :D
         - name: Reload the firewall to enable the rules (not supported by firewalld module afiak)
